@@ -1,17 +1,34 @@
 import os
 import asyncio
+from aiohttp import web
 from aiogram import Bot, Dispatcher
 
-# Получаем токен из переменных окружения Render
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+# Берем порт, который дает Render, или используем 10000 по умолчанию
+PORT = int(os.environ.get("PORT", 10000))
+
+async def handle(request):
+    return web.Response(text="Бот работает!")
+
+async def start_web_server():
+    app = web.Application()
+    app.add_routes([web.get('/', handle)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', PORT)
+    await site.start()
+    print(f"Веб-сервер запущен на порту {PORT}")
 
 async def main():
-    if not BOT_TOKEN:
-        print("Ошибка: Токен не найден! Проверьте настройки в Render.")
+    token = os.getenv("BOT_TOKEN")
+    if not token:
+        print("Ошибка: Токен не найден!")
         return
     
-    bot = Bot(token=BOT_TOKEN)
+    bot = Bot(token=token)
     dp = Dispatcher()
+    
+    # Запускаем веб-сервер и бота параллельно
+    await start_web_server()
     print("Бот успешно запущен!")
     await dp.start_polling(bot)
 
